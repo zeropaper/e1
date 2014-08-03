@@ -1,5 +1,5 @@
 // Core variables and mixins
-@import "variables.less";
+@import "_variables.less";
 @import "mixins.less";
 
 // Reset and dependencies
@@ -16,35 +16,82 @@
 @import "forms.less";
 @import "buttons.less";
 
-// Components
-@import "component-animations.less";
-@import "dropdowns.less";
-@import "button-groups.less";
-@import "input-groups.less";
-@import "navs.less";
-@import "navbar.less";
-@import "breadcrumbs.less";
-@import "pagination.less";
-@import "pager.less";
-@import "labels.less";
-@import "badges.less";
-@import "jumbotron.less";
-@import "thumbnails.less";
-@import "alerts.less";
-@import "progress-bars.less";
-@import "media.less";
-@import "list-group.less";
-@import "panels.less";
-@import "responsive-embed.less";
-@import "wells.less";
-@import "close.less";
+// // Components
+// @import "component-animations.less";
+// @import "dropdowns.less";
+// @import "button-groups.less";
+// @import "input-groups.less";
+// @import "navs.less";
+// @import "navbar.less";
+// @import "breadcrumbs.less";
+// @import "pagination.less";
+// @import "pager.less";
+// @import "labels.less";
+// @import "badges.less";
+// @import "jumbotron.less";
+// @import "thumbnails.less";
+// @import "alerts.less";
+// @import "progress-bars.less";
+// @import "media.less";
+// @import "list-group.less";
+// @import "panels.less";
+// @import "responsive-embed.less";
+// @import "wells.less";
+// @import "close.less";
 
-// Components w/ JavaScript
-@import "modals.less";
-@import "tooltip.less";
-@import "popovers.less";
-@import "carousel.less";
+// // Components w/ JavaScript
+// @import "modals.less";
+// @import "tooltip.less";
+// @import "popovers.less";
+// @import "carousel.less";
 
 // Utility classes
 @import "utilities.less";
 @import "responsive-utilities.less";
+
+
+
+.years,
+.years ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0;
+  overflow: hidden;
+}
+
+.years {
+  background-color: @gray-lighter;
+
+  > li {
+    margin: 1em 0;
+  }
+
+  li {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .label {
+    position: absolute;
+    left: 0;
+    width: 10%;
+    display: block;
+    float: left;
+  }
+
+  ul {
+    position: relative;
+    float: right;
+    width: 90%;
+    clear: right;
+  }
+
+  .hours li {
+    > .label,
+    > ul {
+      padding: 0.2em 0;
+      margin: 1em 0 0 0;
+    }
+  }
+}

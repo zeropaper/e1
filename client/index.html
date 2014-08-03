@@ -3,6 +3,7 @@
   <head>
     <title>E1</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
   </head>
   <body>
 
@@ -15,13 +16,172 @@
     <!--
     <script src="/socket.io/socket.io.js"></script>
     -->
-    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="//rawgithub.com/documentcloud/underscore/master/underscore.js"></script>
-    <script type="text/javascript" src="//rawgithub.com/documentcloud/backbone/master/backbone.js"></script>
+    <script type="text/javascript" src="js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="js/vendor/moment-with-langs.js"></script>
+    <script type="text/javascript" src="js/vendor/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/vendor/underscore.js"></script>
+    <script type="text/javascript" src="js/vendor/backbone.js"></script>
+
+    <script type="text/javascript" src="//rawgithub.com/n3dst4/colour.js/master/colour.js"></script>
     <script type="text/javascript" src="//rawgithub.com/egonelbre/jsfx/master/lib/audio.js"></script>
     <script type="text/javascript" src="//rawgithub.com/egonelbre/jsfx/master/lib/jsfx.js"></script>
     <script type="text/javascript" src="//rawgithub.com/egonelbre/jsfx/master/lib/jsfxlib.js"></script>
+
+    <script type="text/template" name="sources">
+      <form role="form"
+            class="form-inline"
+            name="add-new-source">
+        <div class="form-group">
+          <select name="source-type"
+                  class="form-control">
+            <option value="">Auto detect</option>
+            <option value="github">Github</option>
+            <option value="tumblr">Tumblr</option>
+            <option value="soundcloud">Soundcloud</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <input type="text"
+                 name="new-source"
+                 placeholder="URL of an events source"
+                 class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <button type="button"
+                  class="btn btn-primary"
+                  name="add-source">Add</button>
+        </div>
+      </form>
+      <ol class="sources panel-group">
+      </ol>
+    </script>
+
+
+
+
+
+    <script type="text/template" name="source">
+    <% var soundUid = _.uniqueId('sound'); %>
+
+    <a href="<%- url %>"><%- url %></a>
+
+    </script>
+
+<!--
+    <form role="form" class="form-inline">
+
+      <div>
+      <% _.each(parameters, function(param) {
+        var ctrlUid = _.uniqueId('ctrl'); %>
+        <div class="form-group">
+          <label for="<%- ctrlUid %>"><%= param.name %></label>
+
+
+          <% if (param.type === 'range') { %>
+
+          <input type="range"
+                 value="<%- param.def %>"
+                 name="<%- param.id %>"
+                 step="<%- param.step %>"
+                 min="<%- param.min %>"
+                 max="<%- param.max %>"
+                 id="<%- ctrlUid %>"
+                 class="form-control"/>
+
+          <% }
+          else if (param.type === 'option') { %>
+
+          <select name="<%- param.id %>"
+                  id="<%- ctrlUid %>"
+                  class="form-control">
+          <% _.each(param.options, function(name) { %>
+            <option value="<%- name %>"<%- (param.def === name ? 'selected' : '') %>>
+              <%- name %>
+            </option>
+          <% }); %>
+          </select>
+
+          <% } %>
+
+
+        </div>
+      <% }); %>
+      </div>
+    </form>
+-->
+    <script type="text/template" name="all-source-events">
+    <ul class="years">
+    <% _.each(dates || {}, function(item, year) { %>
+      <li data-year="<%- year %>">
+        <span class="label"><%- year %></span>
+
+        <ul class="months">
+        <% _.each(item, function(item, month) { %>
+          <li data-month="<%- month %>">
+            <span class="label"><%- month %>.</span>
+
+            <ul class="days">
+            <% _.each(item, function(item, day) { %>
+              <li data-day="<%- day %>">
+                <span class="label"><%- day %>.</span>
+
+                <ul class="hours">
+                <% _.each(item, function(item, hour) { %>
+                  <li data-hour="<%- hour %>">
+                    <span class="label"><%- hour %>h</span>
+
+                    <ul>
+                    <% _.each(item, function(event) { %>
+                      <li class="event"
+                          data-source="<%- event.source %>"
+                          style="background-color: <%- event.background %>; color: <%- event.color %>">
+                        <span class="provider"><%- event.provider %></span>
+                        <span class="type"><%- event.type %></span>
+                        <span class="date"><%- event.date %></span>
+                      </li>
+                    <% }) %>
+                    </ul>
+
+                  </li>
+                <% }) %>
+                </ul>
+
+              </li>
+            <% }) %>
+            </ul>
+
+          </li>
+        <% }) %>
+        </ul>
+
+      </li>
+    <% }) %>
+    </ul>
+
+
+    <ol class="events">
+    <% /* _.each(events, function(event) { %>
+      <li data-date="<%- event.date %>"
+          data-type="<%- event.type %>">
+        <span class="source"><%- event.source %></span>
+        <span class="provider"><%- event.provider %></span>
+        <span class="type"><%- event.type %></span>
+        <span class="date"><%- event.date %></span>
+      </li>
+    <% }) */ %>
+    </ol>
+    </script>
+
+
+
+
+
+
+
+
+
 
     <script type="text/javascript" src="js/e1.js"></script>
   </body>
