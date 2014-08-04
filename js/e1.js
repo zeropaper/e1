@@ -6,7 +6,7 @@
 
 
   var TUMBLR_API_KEY = 'Wvz495Lkb0m1FGDNKUQJGzqv4Qgyt25UnZMISRB4e2CgmVJzEP';
-
+  var REFRESH = 0;//10000;
 
   var githubURLExp = /github\.com/;
   var tumblrURLExp = /tumblr\.com/;
@@ -26,6 +26,50 @@
   }
 
 
+  function solveInput(attrs) {
+    attrs = _.clone(attrs);
+    attrs.provider = (attrs.provider || detectProvider(attrs.url));
+
+    if (!attrs.url) {
+      switch (attrs.provider) {
+        case 'github':
+          _.defaults(attrs, {
+            resource: 'users',
+            type: 'events',
+          });
+          attrs.url = 'https://api.github.com/'+
+                      attrs.resource +'/'+
+                      attrs.name +'/'+
+                      attrs.type;
+          break;
+
+        case 'tumblr':
+          _.defaults(attrs, {
+            resource: 'blog',
+            type: 'posts',
+          });
+          attrs.url = 'http://api.tumblr.com/v2/'+
+                      attrs.resource +'/'+
+                      attrs.name +'/'+
+                      attrs.type;
+          break;
+
+        // case 'soundcloud':
+        //   break;
+
+        default:
+          throw new Error('Unsupported provider: '+ provider);
+      }
+    }
+    else {
+      switch (attrs.provider) {
+        case 'github':
+          //
+          break;
+      }
+    }
+  }
+
 
 
   var providers = {};
@@ -34,9 +78,20 @@
   var _nextReset;
 
   var EventsList = Backbone.Collection.extend({
+    localStorage: new Backbone.LocalStorage('source-events'),
+
     initialize: function(models, options) {
       this.page = 0;
       this.source = options.source;
+
+      var storageName = [
+        this.source.get('provider'),
+        this.source.get('resource'),
+        this.source.get('name'),
+        this.source.get('type')
+      ].join('-');
+
+      this.localStorage = new Backbone.LocalStorage(storageName);
     },
 
     toEvents: function() {
@@ -47,30 +102,39 @@
   });
 
   var BaseModel = Backbone.Model.extend({
+
   });
 
   var GithubModel = BaseModel.extend({
+    initialize: function() {
+
+    },
     toEvent: function() {
       var obj = this.toJSON();
       return {
+        raw: obj,
         source: this.collection.source.get('url'),
         provider: 'github',
         type: obj.type || 'unknown',
         date: new Date(obj.created_at),
-        raw: obj
+        icon: {
+          PushEvent: 'repo-push',
+          CreateEvent: 'repo-create',
+          ForkEvent: 'repo-fork',
+        }[obj.type]
       };
     }
   });
 
   providers.github = EventsList.extend({
-    initialize: function(models, options) {
+    initialize: function() {
+      EventsList.prototype.initialize.apply(this, arguments);
       this.page = 1;
-      this.source = options.source;
     },
 
     model: GithubModel,
 
-    fetch: function(options) {
+    fetchEvents: function(options) {
       var self = this;
       options = options || {};
 
@@ -80,18 +144,20 @@
           page: self.page
         },
         success: (options.success ? options.success : function(data, textStatus, jqXhr) {
-          self.add(data);
+          _.each(data, function(model) {
+            self.create(model);
+          });
           self.page = self.page + 1;
 
           _githubRemaining = parseInt(jqXhr.getResponseHeader('X-RateLimit-Remaining'), 10);
           _githubReset = parseInt(jqXhr.getResponseHeader('X-RateLimit-Reset'), 10);
           _nextReset = (new Date(_githubReset * 1000)) - (new Date());
 
-          // if (self.page !== false) {
-          //   setTimeout(function() {
-          //     self.fetch(options);
-          //   }, 5000);
-          // }
+          if (REFRESH && self.page !== false) {
+            setTimeout(function() {
+              self.fetchEvents(options);
+            }, REFRESH);
+          }
         }),
         error: function() {
           self.page = false;
@@ -105,11 +171,21 @@
     toEvent: function() {
       var obj = this.toJSON();
       return {
+        raw: obj,
         source: this.collection.source.get('url'),
         provider: 'tumblr',
         type: obj.type || 'unknown',
         date: new Date(obj.date),
-        raw: obj
+        icon: {
+          photo: 'device-camera',
+          video: 'device-camera-video',
+          audio: 'megaphone',
+          text: 'book',
+          quote: 'quote',
+          link: 'bookmark',
+          chat: 'comment-discussion',
+          answer: 'mortar-board'
+        }[obj.type]
       };
     }
   });
@@ -117,7 +193,7 @@
   providers.tumblr = EventsList.extend({
     model: TumblrModel,
 
-    fetch: function(options) {
+    fetchEvents: function(options) {
       var self = this;
       options = options || {};
 
@@ -132,11 +208,11 @@
           self.add(data.response.posts || data.response.liked_posts || data.response.users || []);
           self.page = self.page + 1;
 
-          // if (self.page !== false) {
-          //   setTimeout(function() {
-          //     self.fetch(options);
-          //   }, 5000);
-          // }
+          if (REFRESH && self.page !== false) {
+            setTimeout(function() {
+              self.fetchEvents(options);
+            }, REFRESH);
+          }
         },
         error: function() {
           self.page = false;
@@ -149,7 +225,7 @@
 
 
   providers.soundcloud = EventsList.extend({
-    fetch: function(options) {
+    fetchEvents: function(options) {
       options = options || {};
     }
   });
@@ -157,31 +233,45 @@
 
 
   var Source = BaseModel.extend({
-    // idAttribute: 'url',
+    idAttribute: 'url',
 
-    initialize: function(attrs) {
-      var provider = attrs.provider || detectProvider(attrs.url);
+    // githubURLExp:
 
-      var List = providers[provider];
+    initialize: function(attrs, options) {
+      options = options || {};
+      var self = this;
+      _.extend(this.attributes, solveInput(attrs));
+      var List = providers[this.attributes.provider];
+
       if (!_.isFunction(List)) {
-        return;
+        throw new Error('Unsupported provider: '+ this.attributes.provider);
       }
+
+      console.info('generated url', this.attributes);
+
 
       this.events = new List([], {
         source: this
       });
 
-      this.fetchEvents();
+      this.fetch({
+        success: function(collection) {
+          if (!collection.length) {
+            self.fetchEvents();
+          }
+        }
+      });
     },
 
     fetchEvents: function() {
-      this.events.fetch({
+      this.events.fetchEvents({
         url: this.get('url')
       });
     }
   });
 
   var Sources = Backbone.Collection.extend({
+    localStorage: new Backbone.LocalStorage('e1-sources'),
     model: Source
   });
 
@@ -317,38 +407,6 @@
       this.wave.play();
       return this;
     }
-  }, {
-    blank: function() {
-      return [
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000,
-        0.0000
-      ].slice(0);
-    }
   });
 
 
@@ -381,9 +439,16 @@
   var AllSourceEventsView = BaseView.extend({
     sourceColors: {},
 
+    tmpl: template('all-source-events'),
+
+    partials: {
+      tumblrEvent: template('tumblr-event'),
+      githubEvent: template('github-event'),
+      soundcloudEvent: template('soundcloud-event'),
+    },
+
     initialize: function(options) {
       var self = this;
-      this.tmpl = template('all-source-events');
 
       this.collection = options.collection;
 
@@ -393,7 +458,7 @@
         if (!source.has('color')) {
           var bg = getRandomColor();
 
-          var text = Colour(bg);
+          var text = new Colour(bg);
           var luma = text.luma();
           text = text.desaturate().invert();
           if (luma < 0.5) {
@@ -432,6 +497,7 @@
     },
 
     render: function() {
+      var self = this;
       this.undelegateEvents();
 
       var dates = {};
@@ -439,7 +505,7 @@
         // var date = model.get('date');
         var date = moment(model.get('date'));
         var obj = model.toJSON();
-        delete obj.raw;
+        // delete obj.raw;
 
         // var year = date.getFullYear();
         // var month = date.getMonth() + 1;
@@ -449,17 +515,24 @@
         var year = date.format('YYYY');
         var month = date.format('MMM');
         var day = date.format('dd D');
-        var hour = date.format('H');
+        // var hour = date.format('H');
 
         dates[year] = dates[year] || {};
         dates[year][month] = dates[year][month] || {};
-        dates[year][month][day] = dates[year][month][day] || {};
-        dates[year][month][day][hour] = dates[year][month][day][hour] || [];
-        dates[year][month][day][hour].push(obj);
+        dates[year][month][day] = dates[year][month][day] || [];
+        dates[year][month][day].push(obj);
+        // dates[year][month][day] = dates[year][month][day] || {};
+        // dates[year][month][day][hour] = dates[year][month][day][hour] || [];
+        // dates[year][month][day][hour].push(obj);
       });
 
       var events = this.flatten.toJSON();
       this.$el.html(this.tmpl({
+        partial: function(name, data) {
+          return self.partials[name] ?
+                 self.partials[name](data) :
+                 'nope.. '+ name;
+        },
         dates: dates,
         events: events
       }));
@@ -511,29 +584,15 @@
 
     add: function() {
       var name = this.$('[name="new-source"]').val();
-      var url = name;
       var provider = this.$('[name="source-type"]').val();
-
-      if (provider === 'github') {
-        url = 'https://api.github.com/users/'+ name +'/events';
-      }
-      else if (provider === 'tumblr') {
-        url = 'http://api.tumblr.com/v2/blog/'+ name +'/posts';
-      }
-      else if (provider === 'soundcloud') {
-        // ...
-      }
-
-
       var source = new Source({
         provider: provider,
-        name: name,
-        url: url
+        name: name
       }, {
         collection: this.collection
       });
-      this.collection.add(source);
-      // source.fetch();
+
+      this.collection.create(source);
     },
 
     update: function() {
@@ -564,20 +623,50 @@
     collection: sources
   });
 
+
+  function fix() {
+    sources.create({
+      provider: 'tumblr',
+      name: 'zeropaper.tumblr.com',
+      type: 'posts',
+      // url: 'http://api.tumblr.com/v2/blog/zeropaper.tumblr.com/posts'
+    });
+
+    sources.create({
+      provider: 'github',
+      name: 'zeropaper',
+      type: 'events',
+      // url: 'https://api.github.com/users/zeropaper/events'
+    });
+
+    sources.create({
+      // provider: 'github',
+      // name: 'ffwdjs',
+      // type: 'events',
+      url: 'https://api.github.com/users/ffwdjs/events'
+    });
+  }
+
+
   $(function() {
     $('body')
       .prepend(allSourceEventsView.$el.addClass('container-fluid'))
       .prepend(sourcesView.$el.addClass('container-fluid'))
     ;
 
-    sources.add([
-      {
-        url: 'http://api.tumblr.com/v2/blog/zeropaper.tumblr.com/likes'
+
+    sources.fetch({
+      success: function(collection) {
+        if (!collection.length) {
+          fix();
+        }
+        console.info('fetched from localStorage', arguments);
       },
-      {
-        url: 'https://api.github.com/users/zeropaper/events'
+      error: function() {
+        fix();
       }
-    ]);
+    });
+
   });
 
 }());

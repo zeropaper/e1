@@ -20,12 +20,15 @@
     <script type="text/javascript" src="js/vendor/moment-with-langs.js"></script>
     <script type="text/javascript" src="js/vendor/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/vendor/underscore.js"></script>
+    <script type="text/javascript" src="js/vendor/underscore.string.js"></script>
     <script type="text/javascript" src="js/vendor/backbone.js"></script>
 
     <script type="text/javascript" src="//rawgithub.com/n3dst4/colour.js/master/colour.js"></script>
     <script type="text/javascript" src="//rawgithub.com/egonelbre/jsfx/master/lib/audio.js"></script>
     <script type="text/javascript" src="//rawgithub.com/egonelbre/jsfx/master/lib/jsfx.js"></script>
     <script type="text/javascript" src="//rawgithub.com/egonelbre/jsfx/master/lib/jsfxlib.js"></script>
+
+    <script type="text/javascript" src="//rawgithub.com/jashkenas/backbone/master/examples/backbone.localStorage.js"></script>
 
     <script type="text/template" name="sources">
       <form role="form"
@@ -111,39 +114,107 @@
       </div>
     </form>
 -->
+    <script type="text/template" name="github-event">
+    <div class="github-event">
+      <div class="actor">
+        <span class="octicon octicon-person"></span>
+        <a href="<%- raw.actor.url %>"
+           class="name"><%- raw.actor.login %></a>
+      </div>
+
+      <div class="repo">
+        <span class="octicon octicon-repo"></span>
+        <a href="<%- raw.repo.url %>"
+           class="name"><%- raw.repo.name %></a>
+      </div>
+
+    <pre><%- JSON.stringify(raw, null, 2) %></pre>
+    </div>
+    </script>
+
+
+
+    <script type="text/template" name="soundcloud-event">
+    <div class="soundcloud-event">
+
+    <pre><%- JSON.stringify(raw, null, 2) %></pre>
+    </div>
+    </script>
+
+
+
+    <script type="text/template" name="tumblr-event">
+    <div class="tumblr-event">
+      <div class="blog">
+        <span class="name"><%- raw.blog_name %></span>
+      </div>
+
+      <div class="post">
+        <h5>
+          <a href="<%- raw.post_url %>"><%- (raw.title || '...') %></a>
+          <% if (raw.note_count) { %>
+          <span class="label label-default note-count"><%- raw.note_count %></span>
+          <% } %>
+        </h5>
+
+
+        <% if (raw.type === 'link') { %>
+        <div class="description">
+          <%- raw.description %>
+        </div>
+        <a class="url" href="<%- raw.url %>">
+          <%- (raw.url.length > 8 ? (raw.url.slice(0, 8)+'') : raw.url) %>
+        </a>
+        <% }
+
+        else if (raw.type === 'text') { %>
+        <div class="body">
+          <%= raw.body %>
+        </div>
+        <% }
+
+        else if (raw.type === 'photo') { %>
+        <div class="photos">
+          <pre><%- JSON.stringify(raw.photos, null, 2) %></pre>
+        </div>
+        <div class="caption">
+          <%- raw.caption %>
+        </div>
+        <% } %>
+      </div>
+    </div>
+    </script>
+
+
+
     <script type="text/template" name="all-source-events">
     <ul class="years">
     <% _.each(dates || {}, function(item, year) { %>
       <li data-year="<%- year %>">
-        <span class="label"><%- year %></span>
+        <span class="time-info"><%- year %></span>
 
         <ul class="months">
         <% _.each(item, function(item, month) { %>
           <li data-month="<%- month %>">
-            <span class="label"><%- month %>.</span>
+            <span class="time-info"><%- month %>.</span>
 
             <ul class="days">
             <% _.each(item, function(item, day) { %>
               <li data-day="<%- day %>">
-                <span class="label"><%- day %>.</span>
+                <span class="time-info"><%- day %>.</span>
 
-                <ul class="hours">
-                <% _.each(item, function(item, hour) { %>
-                  <li data-hour="<%- hour %>">
-                    <span class="label"><%- hour %>h</span>
+                <ul>
+                <% _.each(item, function(event) { %>
+                  <% var mom = moment(event.date) %>
+                  <li class="entry"
+                      data-source="<%- event.source %>">
 
-                    <ul>
-                    <% _.each(item, function(event) { %>
-                      <li class="event"
-                          data-source="<%- event.source %>"
-                          style="background-color: <%- event.background %>; color: <%- event.color %>">
-                        <span class="provider"><%- event.provider %></span>
-                        <span class="type"><%- event.type %></span>
-                        <span class="date"><%- event.date %></span>
-                      </li>
-                    <% }) %>
-                    </ul>
+                    <span class="time-info"><%- mom.format('H:m') %></span>
 
+                    <span title="<%- event.provider %>: <%- event.type %>"
+                          class="octicon octicon-<%- event.icon %>"></span>
+
+                    <%= partial(event.provider+'Event', event) %>
                   </li>
                 <% }) %>
                 </ul>
