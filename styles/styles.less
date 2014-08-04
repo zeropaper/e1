@@ -306,8 +306,6 @@
 }
 
 .years {
-  background-color: @gray-lighter;
-
   > li {
     margin: 1em 0;
   }
@@ -316,16 +314,6 @@
     width: 100%;
     position: relative;
     overflow: hidden;
-  }
-
-  .time-info {
-    position: absolute;
-    left: 0;
-    width: 10%;
-    display: block;
-    float: left;
-    padding: 0.2em 0;
-    margin: 0 0 1em 0;
   }
 
   ul {
@@ -341,7 +329,22 @@
     }
   }
 }
+
+
+.time-info {
+  position: absolute;
+  left: 0;
+  width: 10%;
+  display: block;
+  float: left;
+  padding: 0.2em 0;
+  margin: 0 0 1em 0;
+}
+
+
 .entry {
+  margin-bottom: @grid-gutter-width;
+
   .time-info {
     display: inline-block;
     position: static;
@@ -349,6 +352,11 @@
     width: auto;
     margin: 0;
   }
+}
+
+
+.event-post {
+  margin-left: @grid-gutter-width / 2;
 
   .photos {
     text-align: center;
