@@ -58,16 +58,32 @@
         //   break;
 
         default:
-          throw new Error('Unsupported provider: '+ provider);
+          throw new Error('Unsupported provider: '+ attrs.provider);
       }
     }
     else {
+      var match;
       switch (attrs.provider) {
         case 'github':
-          //
+          match = attrs.url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+          if (match) {
+            attrs.resource = 'users';
+            attrs.name = match[1];
+            attrs.type = match[2];
+          }
+          break;
+        case 'tumblr':
+          match = attrs.url.match(/tumblr\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)/);
+          if (match) {
+            attrs.resource = match[1];
+            attrs.name = match[2];
+            attrs.type = match[3];
+          }
           break;
       }
     }
+
+    return attrs;
   }
 
 
@@ -78,8 +94,6 @@
   var _nextReset;
 
   var EventsList = Backbone.Collection.extend({
-    localStorage: new Backbone.LocalStorage('source-events'),
-
     initialize: function(models, options) {
       this.page = 0;
       this.source = options.source;
@@ -88,9 +102,11 @@
         this.source.get('provider'),
         this.source.get('resource'),
         this.source.get('name'),
-        this.source.get('type')
+        this.source.get('type'),
+        'entry'
       ].join('-');
 
+      console.info('storageName', storageName, this.source.attributes);
       this.localStorage = new Backbone.LocalStorage(storageName);
     },
 
@@ -240,15 +256,23 @@
     initialize: function(attrs, options) {
       options = options || {};
       var self = this;
+
       _.extend(this.attributes, solveInput(attrs));
+      this.id = this.attributes.url;
       var List = providers[this.attributes.provider];
 
       if (!_.isFunction(List)) {
         throw new Error('Unsupported provider: '+ this.attributes.provider);
       }
 
-      console.info('generated url', this.attributes);
+      var storageName = [
+        this.attributes.provider,
+        this.attributes.resource,
+        this.attributes.name,
+        this.attributes.type
+      ].join('-');
 
+      this.localStorage = new Backbone.LocalStorage(storageName);
 
       this.events = new List([], {
         source: this
@@ -256,6 +280,7 @@
 
       this.fetch({
         success: function(collection) {
+          console.info('fetched');
           if (!collection.length) {
             self.fetchEvents();
           }
@@ -316,7 +341,9 @@
 
   var SourceView = BaseView.extend({
     tagName: 'li',
+
     className: 'panel panel-default',
+
     initialize: function(options) {
       var model = options.model;
       this.model = model;
@@ -422,7 +449,10 @@
   });
 
   var FlattenEventsList = Backbone.Collection.extend({
-    comparator: 'date',
+    // comparator: 'date',
+    comparator: function(a, b) {
+      return a.attributes.date.getTime() - b.attributes.date.getTime();
+    },
     model: EventModel
   });
 
@@ -501,6 +531,7 @@
       this.undelegateEvents();
 
       var dates = {};
+      this.flatten.sort();
       this.flatten.each(function(model) {
         // var date = model.get('date');
         var date = moment(model.get('date'));

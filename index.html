@@ -115,7 +115,7 @@
     </form>
 -->
     <script type="text/template" name="github-event">
-    <div class="github-event">
+    <div class="event-post github-event">
       <div class="actor">
         <span class="octicon octicon-person"></span>
         <a href="<%- raw.actor.url %>"
@@ -127,24 +127,21 @@
         <a href="<%- raw.repo.url %>"
            class="name"><%- raw.repo.name %></a>
       </div>
-
-    <pre><%- JSON.stringify(raw, null, 2) %></pre>
     </div>
     </script>
 
 
 
     <script type="text/template" name="soundcloud-event">
-    <div class="soundcloud-event">
-
-    <pre><%- JSON.stringify(raw, null, 2) %></pre>
+    <div class="event-post soundcloud-event">
+    TODO
     </div>
     </script>
 
 
 
     <script type="text/template" name="tumblr-event">
-    <div class="tumblr-event">
+    <div class="event-post tumblr-event">
       <div class="blog">
         <span class="name"><%- raw.blog_name %></span>
       </div>
@@ -160,10 +157,10 @@
 
         <% if (raw.type === 'link') { %>
         <div class="description">
-          <%- raw.description %>
+          <%= raw.description %>
         </div>
         <a class="url" href="<%- raw.url %>">
-          <%- (raw.url.length > 8 ? (raw.url.slice(0, 8)+'') : raw.url) %>
+          <%- (raw.url.length > 40 ? (raw.url.slice(0, 40)+'...') : raw.url) %>
         </a>
         <% }
 
@@ -175,10 +172,9 @@
 
         else if (raw.type === 'photo') { %>
         <div class="photos">
-          <pre><%- JSON.stringify(raw.photos, null, 2) %></pre>
         </div>
         <div class="caption">
-          <%- raw.caption %>
+          <%= raw.caption %>
         </div>
         <% } %>
       </div>
